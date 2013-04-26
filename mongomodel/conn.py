@@ -3,10 +3,12 @@ from twisted.python import log
 
 import txmongo
 
+
 class ConnectionManager(object):
     """
     """
-    def __init__(self):
+    def __init__(self, pool=True):
+        self.pool = pool
         self._connection = None
         self._db = None
         self._collection = None
@@ -15,44 +17,51 @@ class ConnectionManager(object):
         self._connection = conn
         return self._connection
 
-    def getConnection(self):
+    def _getConnection(self):
         if self._connection:
-            result = self._connection
+            return self._connection
         else:
-            result = txmongo.MongoConnectionPool()
-        d = defer.maybeDeferred(result)
+            if self.pool:
+                return txmongo.MongoConnectionPool()
+            else:
+                return txmongo.MongoConnection()
+
+    def getConnection(self):
+        d = defer.maybeDeferred(self._getConnection)
         d.addErrback(log.err)
-        d.addCallback(setConnection)
+        d.addCallback(self.setConnection)
         return d
 
     def setDB(self, ignored, dbName):
         self._db = getattr(self._connection, dbName)
         return self._db
 
-    def getDB(self, dbName):
+    def _getDB(self, dbName):
         if self._db:
-            result = self._db
+            return self._db
         elif self._connection:
-            result = self.setDB(dbName)
+            return self.setDB(dbName)
         else:
-            result = self.getConnection()
-            result.addCallback(setDB, dbName)
-        d = defer.maybeDeferred(result)
-        d.addErrback(log.err)
-        return d
+            d = self.getConnection()
+            d.addCallback(self.setDB, dbName)
+            d.addErrback(log.err)
+            return d
+
+    def getDB(self, dbName):
+        return defer.maybeDeferred(self._getDB, dbName)
 
     def setCollection(self, ignored, collName):
         self._collection = getattr(self._db, collName)
         return self._collection
 
-    def getCollection(self, dbName, collName):
+    def _getCollection(self, dbName, collName):
         if self._collection:
-            result = self._collection
+            return self._collection
         else:
-            result = self.getDB(dbName)
-            result.addCallback(setCollection, collName)
-        d = defer.maybeDeferred(result)
-        d.addErrback(log.err)
-        return d
-            
+            d = self.getDB(dbName)
+            d.addCallback(self.setCollection, collName)
+            d.addErrback(log.err)
+            return d
 
+    def getCollection(self, dbName, collName):
+        return defer.maybeDeferred(self._getCollection, dbName, collName)
