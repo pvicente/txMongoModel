@@ -7,10 +7,9 @@ class ConnectionManager(object):
     """
     """
     def __init__(self):
-        _connection = None
-        _db = None
-        _collection = None
-
+        self._connection = None
+        self._db = None
+        self._collection = None
 
     def setConnection(self, conn):
         self._connection = conn
