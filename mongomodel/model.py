@@ -58,3 +58,9 @@ class Model(object):
             return collection.find(fields=fields, **kwargs)
 
         return self.execute(_find)
+
+    def command(self, command, value=1):
+        return self.connMan.command(self.db, command, value=value)
+
+    def dropDatabase(self):
+        return self.command("dropDatabase")

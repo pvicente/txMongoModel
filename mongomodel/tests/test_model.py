@@ -39,7 +39,7 @@ class ModelTestCase(unittest.TestCase):
             d.addCallback(_close)
             return d
 
-        d = self.model.connMan.dropDatabase(self.model.db)
+        d = self.model.dropDatabase()
         d.addCallback(close)
         return d
 
