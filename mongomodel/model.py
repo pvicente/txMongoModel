@@ -23,9 +23,11 @@ class Model(object):
         return d
 
     def insert(self, **data):
+        if data:
+            self.data = data
 
         def _insert(collection):
-            return collection.insert(data, safe=True)
+            return collection.insert(self.data, safe=True)
 
         return self.execute(_insert)
 
