@@ -1,6 +1,6 @@
 display_name = "txMongoModel"
 library_name = "mongomodel"
-version = "0.0.2"
+version = "0.0.3"
 author = "Duncan McGreggor"
 author_email = "duncan@cogitat.io"
 license = "MIT"
