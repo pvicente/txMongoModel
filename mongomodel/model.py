@@ -22,19 +22,19 @@ class Model(object):
         d.addErrback(log.err)
         return d
 
-    def insertOne(self, key, value):
+    def insert(self, **data):
 
         def _insert(collection):
-            return collection.insert({key: value}, safe=True)
+            return collection.insert(data, safe=True)
 
         return self.execute(_insert)
 
-    def insertMany(self, dataDict):
+    def insertMany(self, listOfDicts):
 
         def _insert(collection):
             deferreds = []
-            for key, value in dataDict.items():
-                d = collection.insert({key: value}, safe=True)
+            for data in listOfDicts:
+                d = collection.insert(data, safe=True)
                 deferreds.append(d)
             d = defer.DeferredList(deferreds)
             d.addErrback(log.err)
@@ -42,13 +42,7 @@ class Model(object):
 
         return self.execute(_insert)
 
-    def insert(self, key="", value="", data={}):
-        if key:
-            return self.insertOne(key, value)
-        elif data:
-            self.data = data
-        return self.insertMany(self.data)
-
+    # XXX Add unit test(s) for find
     def find(self, fields={}, sortField="", order="asc", **kwargs):
         if "filter" not in kwargs and sortField:
             if order == "asc":

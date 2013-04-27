@@ -52,40 +52,29 @@ class ModelTestCase(unittest.TestCase):
         d.addCallback(checkResult)
         return d
 
-    def test_insertOne(self):
+    def test_insertKwargs(self):
 
         def checkResult(result):
             self.assertEqual(type(result), objectid.ObjectId)
 
-        d = self.model.insertOne("my key", "my value")
+        d = self.model.insert(key1="value 1", key2="value 2")
         d.addCallback(checkResult)
         return d
 
-    def test_insertMany(self):
+    def test_insertData(self):
 
-        def checkResults(results):
-            for result in results:
-                log.msg(result)
-                self.assertEqual(result[0], True)
+        def checkResult(result):
+            self.assertEqual(type(result), objectid.ObjectId)
 
-        d = self.model.insertMany({
+        d = self.model.insert(**{
             "key 1": "value 1",
             "key 2": "value 2",
             "key 3": "value 3",
             "key 4": "value 4"})
-        d.addCallback(checkResults)
-        return d
-
-    def test_insertDispatchOne(self):
-
-        def checkResult(result):
-            self.assertEqual(type(result), objectid.ObjectId)
-
-        d = self.model.insert("my key", "my value")
         d.addCallback(checkResult)
         return d
 
-    def test_insertDispatchMany(self):
+    def test_insertMany(self):
 
         def checkResults(results):
             self.assertEqual(len(results), 4)
@@ -93,23 +82,10 @@ class ModelTestCase(unittest.TestCase):
                 log.msg(result)
                 self.assertEqual(result[0], True)
 
-        d = self.model.insert(data={
-            "key 1": "value 1",
-            "key 2": "value 2",
-            "key 3": "value 3",
-            "key 4": "value 4"})
-        d.addCallback(checkResults)
-        return d
-
-    def test_insertConstructorData(self):
-
-        def checkResults(results):
-            self.assertEqual(len(results), 3)
-            for result in results:
-                log.msg(result)
-                self.assertEqual(result[0], True)
-
-        self.model = TestModel(key1="value 1", key2="value 2", key3="value 3")
-        d = self.model.insert()
+        d = self.model.insertMany([
+            {"key 1": "value 1"},
+            {"key 2": "value 2"},
+            {"key 3": "value 3"},
+            {"key 4": "value 4"}])
         d.addCallback(checkResults)
         return d
