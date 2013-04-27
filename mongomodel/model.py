@@ -43,10 +43,11 @@ class Model(object):
         return self.execute(_insert)
 
     def insert(self, key="", value="", data={}):
-        if data:
-            return self.insertMany(data)
-        elif key:
+        if key:
             return self.insertOne(key, value)
+        elif data:
+            self.data = data
+        return self.insertMany(self.data)
 
     def find(self, fields={}, sortField="", order="asc", **kwargs):
         if "filter" not in kwargs and sortField:

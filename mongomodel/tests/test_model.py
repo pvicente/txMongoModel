@@ -88,6 +88,7 @@ class ModelTestCase(unittest.TestCase):
     def test_insertDispatchMany(self):
 
         def checkResults(results):
+            self.assertEqual(len(results), 4)
             for result in results:
                 log.msg(result)
                 self.assertEqual(result[0], True)
@@ -97,5 +98,18 @@ class ModelTestCase(unittest.TestCase):
             "key 2": "value 2",
             "key 3": "value 3",
             "key 4": "value 4"})
+        d.addCallback(checkResults)
+        return d
+
+    def test_insertConstructorData(self):
+
+        def checkResults(results):
+            self.assertEqual(len(results), 3)
+            for result in results:
+                log.msg(result)
+                self.assertEqual(result[0], True)
+
+        self.model = TestModel(key1="value 1", key2="value 2", key3="value 3")
+        d = self.model.insert()
         d.addCallback(checkResults)
         return d
