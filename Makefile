@@ -8,4 +8,11 @@ build-venv:
 	. $(ENABLE) && pip install txmongo
 
 check: build-venv
-	. $(ENABLE) && trial $(PROJ)
+	clear
+	@. $(ENABLE) && trial $(PROJ)
+
+register:
+	python setup.py register
+
+upload: check
+	python setup.py sdist upload --show-response
