@@ -1,0 +1,5 @@
+.venv
+_trial_temp
+*.egg-info
+*.py[co]
+*.sw[po]
