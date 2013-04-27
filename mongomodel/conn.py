@@ -40,7 +40,7 @@ class ConnectionManager(object):
         if self._db:
             return self._db
         elif self._connection:
-            return self.setDB(dbName)
+            return self.setDB(None, dbName)
         else:
             d = self.getConnection()
             d.addCallback(self.setDB, dbName)
@@ -65,3 +65,18 @@ class ConnectionManager(object):
 
     def getCollection(self, dbName, collName):
         return defer.maybeDeferred(self._getCollection, dbName, collName)
+
+    def command(self, dbName, command, value=1):
+
+        def _command(db):
+            d = db["$cmd"].find_one({command: value})
+            d.addErrback(log.err)
+            return d
+
+        d = self.getDB(dbName)
+        d.addCallback(_command)
+        d.addErrback(log.err)
+        return d
+
+    def dropDatabase(self, dbName):
+        return self.command(dbName, "dropDatabase")
