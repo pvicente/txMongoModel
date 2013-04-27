@@ -9,10 +9,10 @@ Dependencies
 
 txMongoModel requires the following:
 
- * twisted (installed automatically)
- * txMongo (installed automatically)
- * MongoDB
- * virtualenv
+* twisted (installed automatically when using `pip`)
+* txMongo (installed automatically when using `pip`)
+* MongoDB
+* virtualenv
 
 Installing
 ----------
