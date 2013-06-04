@@ -20,11 +20,11 @@ class ConnectionManager(object):
     def _getConnection(self):
         if self._connection:
             return self._connection
-        else:
+        if isinstance(self.pool, bool):
             if self.pool:
                 return txmongo.MongoConnectionPool()
-            else:
-                return txmongo.MongoConnection()
+            return txmongo.MongoConnection()
+        return self.pool
 
     def getConnection(self):
         d = defer.maybeDeferred(self._getConnection)
