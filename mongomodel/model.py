@@ -1,10 +1,7 @@
 from twisted.internet import defer
 from twisted.python import log
 
-import txmongo
-
-from mongomodel import conn
-
+from conn import ConnectionManager
 
 class Model(object):
     """
@@ -13,7 +10,7 @@ class Model(object):
     collection = ""
 
     def __init__(self, pool=True, **kwargs):
-        self.connMan = conn.ConnectionManager(pool=pool)
+        self.connMan = ConnectionManager(pool=pool)
         self.data = kwargs
 
     def execute(self, function):
