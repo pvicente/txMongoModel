@@ -53,6 +53,12 @@ class Model(object):
 
         return self.execute(_find)
 
+    def find_one(self, spec=None, fields=None):
+        def _find_one(collection):
+            return collection.find_one(spec, fields)
+        
+        return self.execute(_find_one)
+
     def command(self, command, value=1):
         return self.connMan.command(self.db, command, value=value)
 
