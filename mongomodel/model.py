@@ -65,6 +65,12 @@ class Model(object):
         
         return self.execute(_remove)
 
+    def update(self, spec, upsert=False, multi=False, **data):
+        def _update(collection):
+            return collection.update(spec, data, upsert=upsert, multi=multi, safe=True)
+        
+        return self.execute(_update)
+
     def command(self, command, value=1):
         return self.connMan.command(self.db, command, value=value)
 
