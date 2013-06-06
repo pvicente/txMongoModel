@@ -59,6 +59,12 @@ class Model(object):
         
         return self.execute(_find_one)
 
+    def remove(self, spec):
+        def _remove(collection):
+            return collection.remove(spec, safe=True)
+        
+        return self.execute(_remove)
+
     def command(self, command, value=1):
         return self.connMan.command(self.db, command, value=value)
 
