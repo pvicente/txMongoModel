@@ -42,14 +42,9 @@ class Model(object):
         return self.execute(_insert)
 
     # XXX Add unit test(s) for find
-    def find(self, fields={}, sortField="", order="asc", **kwargs):
-        if "filter" not in kwargs and sortField:
-            if order == "asc":
-                kwargs["filter"] = self.getAscendingFilter(
-                    fields, sortField)
-
+    def find(self, spec={}, fields={}, mongofilter=None):
         def _find(collection):
-            return collection.find(fields=fields, **kwargs)
+            return collection.find(spec=spec, fields=fields, filter=mongofilter)
 
         return self.execute(_find)
 
