@@ -1,17 +1,76 @@
-from twisted.internet import defer
-from twisted.python import log
-
 from conn import ConnectionManager
+from twisted.internet import defer, reactor
+from twisted.python import log
+from txmongo import filter
+import types
 
+
+class Indexes(object):
+    @classmethod
+    def get_index_sort(cls, fields):
+        return reduce(lambda x,y: x+y, [filter.DESCENDING(name[1:]) if name[0] == '-' else filter.ASCENDING(name) for name in fields])
+    
+    @classmethod
+    def get_index_from_string(cls, index):
+        """Return an index from simple string. 
+        Example: "index_name" (index_name ASCENDING) -index_name (index_name DESCENDING)"""
+        sort_fields = filter.sort(cls.get_index_sort([index]))
+        return {'sort_fields': sort_fields}
+    
+    @classmethod
+    def get_index_from_tuple(cls, index):
+        """Return an index from elements in tuple. 
+        Example ("index_name_1", "index_name_2", "-index_name_3") -> 3 fields Index("index_name_1" ASCENDING, "index_name_2" ASCENDING, "index_name_3" DESCENDING)"""
+        sort_fields = filter.sort(cls.get_index_sort(index))
+        return {'sort_fields': sort_fields}
+    
+    @classmethod
+    def get_index_from_dict(cls, index):
+        """Return an index from elements in dict.
+        Example {'fields': ("index_name_1", "-index_name_2"), 'name': 'myindex', 'unique': True, 'dropDups': True, 'bucketSize': 2048, 'expireAfterSeconds': 3600
+        Return an index ("index_name_1" ASCENDING, "index_name_2" DESCENDING) with name myindex unique dropping duplicates with bucketSize 2048 bytes and fields are removed after 3600 seconds
+        """
+        fields = index.pop('fields', None)
+        if fields is None:
+            raise ValueError('Not found key fields in index: %s'%(index))
+        if not isinstance(fields, (types.StringType, types.TupleType)):
+            raise TypeError('fields key in index must be string or tuple types. Now is %s'%(type(fields)))
+        fields = [fields] if isinstance(fields, types.StringType) else fields
+        sort_fields = filter.sort(cls.get_index_sort(fields))
+        ret = {'sort_fields': sort_fields}
+        ret.update(index)
+        return ret
+    
+    def __init__(self, indexes=[]):
+        if not isinstance(indexes, types.ListType):
+            raise TypeError('fields must be a ListType')
+        self.indexes = []
+        for index in indexes:
+            if not isinstance(index, (types.StringType, types.TupleType, types.DictType)):
+                raise TypeError('Element %s is not a valid Type'%(str(index)))
+            if isinstance(index, types.StringType) and index:
+                self.indexes.append(self.get_index_from_string(index))
+            elif isinstance(index, types.TupleType) and index:
+                self.indexes.append(self.get_index_from_tuple(index))
+            else:
+                self.indexes.append(self.get_index_from_dict(index))
+    
+    def create(self, model):
+        for index in self.indexes:
+            reactor.callLater(5, model.ensure_index, index)
+    
 class Model(object):
     """
     """
     db = ""
     collection = ""
+    pool = True
+    indexes = None
 
-    def __init__(self, pool=True, **kwargs):
-        self.connMan = ConnectionManager(pool=pool)
-        self.data = kwargs
+    def __init__(self):
+        self.connMan = ConnectionManager(pool=self.pool)
+        if not self.indexes is None:
+            reactor.callLater(5, self.indexes.create, self)
 
     def execute(self, function):
         d = self.connMan.getCollection(self.db, self.collection)
@@ -20,11 +79,8 @@ class Model(object):
         return d
 
     def insert(self, **data):
-        if data:
-            self.data = data
-
         def _insert(collection):
-            return collection.insert(self.data, safe=True)
+            return collection.insert(data, safe=True)
 
         return self.execute(_insert)
 
@@ -65,7 +121,13 @@ class Model(object):
             return collection.update(spec, data, upsert=upsert, multi=multi, safe=True)
         
         return self.execute(_update)
-
+    
+    def ensure_index(self, index):
+        def _ensure_index(collection):
+            return collection.ensure_index(**index)
+        
+        return self.execute(_ensure_index)
+    
     def command(self, command, value=1):
         return self.connMan.command(self.db, command, value=value)
 
