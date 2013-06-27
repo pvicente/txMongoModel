@@ -4,6 +4,7 @@ from twisted.python import log
 from txmongo import filter
 import types
 
+DELAYED_INDEX_TIME=5
 
 class Indexes(object):
     @classmethod
@@ -57,7 +58,7 @@ class Indexes(object):
     
     def create(self, model):
         for index in self.indexes:
-            reactor.callLater(5, model.ensure_index, index)
+            reactor.callLater(DELAYED_INDEX_TIME, model.ensure_index, index)
     
 class Model(object):
     """
@@ -70,7 +71,7 @@ class Model(object):
     def __init__(self):
         self.connMan = ConnectionManager(pool=self.pool)
         if not self.indexes is None:
-            reactor.callLater(5, self.indexes.create, self)
+            self.indexes.create(self)
 
     def execute(self, function):
         d = self.connMan.getCollection(self.db, self.collection)
