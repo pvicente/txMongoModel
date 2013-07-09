@@ -6,23 +6,28 @@ import types
 
 DELAYED_INDEX_TIME=5
 
-class Indexes(object):
+class Sort(object):
     @classmethod
-    def get_index_sort(cls, fields):
-        return reduce(lambda x,y: x+y, [filter.DESCENDING(name[1:]) if name[0] == '-' else filter.ASCENDING(name) for name in fields])
+    def _get_order(cls, field_list):
+        return reduce(lambda x,y: x+y, [filter.DESCENDING(name[1:]) if name[0] == '-' else filter.ASCENDING(name) for name in field_list])
     
+    @classmethod
+    def getFilter(cls, field_list):
+        return filter.sort(cls._get_order(field_list))
+
+class Indexes(object):
     @classmethod
     def get_index_from_string(cls, index):
         """Return an index from simple string. 
         Example: "index_name" (index_name ASCENDING) -index_name (index_name DESCENDING)"""
-        sort_fields = filter.sort(cls.get_index_sort([index]))
+        sort_fields = Sort.getFilter([index])
         return {'sort_fields': sort_fields}
     
     @classmethod
     def get_index_from_tuple(cls, index):
         """Return an index from elements in tuple. 
         Example ("index_name_1", "index_name_2", "-index_name_3") -> 3 fields Index("index_name_1" ASCENDING, "index_name_2" ASCENDING, "index_name_3" DESCENDING)"""
-        sort_fields = filter.sort(cls.get_index_sort(index))
+        sort_fields = Sort.getFilter(index)
         return {'sort_fields': sort_fields}
     
     @classmethod
@@ -37,7 +42,7 @@ class Indexes(object):
         if not isinstance(fields, (types.StringType, types.TupleType)):
             raise TypeError('fields key in index must be string or tuple types. Now is %s'%(type(fields)))
         fields = [fields] if isinstance(fields, types.StringType) else fields
-        sort_fields = filter.sort(cls.get_index_sort(fields))
+        sort_fields = Sort.getFilter(fields)
         ret = {'sort_fields': sort_fields}
         ret.update(index)
         return ret
