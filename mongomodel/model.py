@@ -134,6 +134,12 @@ class Model(object):
         
         return self.execute(_ensure_index)
     
+    def distinct(self, key, spec=None):
+        def _distinct(collection):
+            return collection.distinct(key, spec)
+        
+        return self.execute(_distinct)
+    
     def command(self, command, value=1):
         return self.connMan.command(self.db, command, value=value)
 
