@@ -140,6 +140,12 @@ class Model(object):
         
         return self.execute(_distinct)
     
+    def count(self, spec=None, fields=None):
+        def _count(collection):
+            return collection.count(spec, fields)
+        
+        return self.execute(_count)
+    
     def command(self, command, value=1):
         return self.connMan.command(self.db, command, value=value)
 
