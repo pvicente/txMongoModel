@@ -84,7 +84,7 @@ class ConnectionManager(object):
     def stats(self, dbName, collection=None, scale=1):
         def _stats(db):
             if collection is None:
-                d = db["$cmd"].find_one({'dbStats': 1, 'scale': scale})
+                d = db["$cmd"].find_one({'dbStats': 1})#dbStats with scale parameter is not found we need to scale default value (bytes)
             else:
                 d = db["$cmd"].find_one({'collStats': collection, 'scale': scale})
             d.addErrback(log.err)
