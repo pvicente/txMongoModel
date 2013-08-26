@@ -81,12 +81,12 @@ class ConnectionManager(object):
     def dropDatabase(self, dbName):
         return self.command(dbName, "dropDatabase")
     
-    def stats(self, dbName, collection=None):
+    def stats(self, dbName, collection=None, scale=1):
         def _stats(db):
             if collection is None:
-                d = db["$cmd"].find_one({'dbStats': 1})
+                d = db["$cmd"].find_one({'dbStats': 1, 'scale': scale})
             else:
-                d = db["$cmd"].find_one({'collStats': collection})
+                d = db["$cmd"].find_one({'collStats': collection, 'scale': scale})
             d.addErrback(log.err)
             return d
         
