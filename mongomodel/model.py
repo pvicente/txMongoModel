@@ -152,9 +152,8 @@ class Model(object):
     def dropDatabase(self):
         return self.command("dropDatabase")
     
-    def stats(self, collection_stats=True, scale=1):
+    def stats(self, collection_stats=True):
         if collection_stats:
-            return self.connMan.stats(self.db, self.collection, scale)
-        else:
-            return self.connMan.stats(self.db, scale=scale)
+            return self.command('collStats', self.collection)
+        return self.command('dbStats', 1)
     
