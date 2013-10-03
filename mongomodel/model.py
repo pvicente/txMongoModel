@@ -122,6 +122,12 @@ class Model(object):
         
         return self.execute(_remove)
 
+    def save(self, doc):
+        def _save(collection):
+            return collection.save(doc, safe=True)
+        
+        return self.execute(_save)
+    
     def update(self, spec, upsert=False, multi=False, **data):
         def _update(collection):
             return collection.update(spec, data, upsert=upsert, multi=multi, safe=True)
