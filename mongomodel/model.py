@@ -73,16 +73,37 @@ class Model(object):
     pool = True
     indexes = None
 
-    def __init__(self):
+    def __init__(self, logging=None, retries=3, metric_retries=None):
         self.connMan = ConnectionManager(pool=self.pool)
         if not self.indexes is None:
             self.indexes.create(self)
+        if logging is None:
+            logging = log
+        self.log = logging
+        self.retries = retries
+        self.metric_retries = metric_retries
 
+    @defer.inlineCallbacks
     def execute(self, function):
-        d = self.connMan.getCollection(self.db, self.collection)
-        d.addCallback(function)
-        d.addErrback(log.err)
-        return d
+        collection = yield self.connMan.getCollection(self.db, self.collection)
+        ret = None
+
+        retries = self.retries
+        while retries>0:
+            try:
+                ret = yield function(collection)
+                retries=0
+            except Exception, e:
+                if not self.metric_retries is None:
+                    self.metric_retries+=1
+                retries-=1
+                if retries == 0:
+                    msg = "Max retries exceeded: %d. Error performing %r with exception %r. Accumulated errors: %d"%(self.retries, function, e, 0 if self.metric_retries is None else int(self.metric_retries))
+                    self.log.err(msg)
+                    if reactor.running:
+                        reactor.stop()
+                    raise
+        defer.returnValue(ret)
 
     def insert(self, **data):
         def _insert(collection):
@@ -125,7 +146,7 @@ class Model(object):
     def save(self, doc):
         def _save(collection):
             return collection.save(doc, safe=True)
-        
+
         return self.execute(_save)
     
     def update(self, spec, upsert=False, multi=False, **data):
