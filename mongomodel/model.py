@@ -151,7 +151,7 @@ class Model(object):
 
         ret = {u'ok': 0.0}
         ret = yield self.execute(_save)
-        if ret['ok'] == 0.0:
+        if isinstance(ret, types.DictionaryType) and ret['ok'] == 0.0:
             if not self.metric_save is None:
                 self.metric_save+=1
             self.log.err("Error saving document: %r. Response: %r. Current save metric: %d"%(doc, ret, 0 if self.metric_save is None else int(self.metric_save)))
