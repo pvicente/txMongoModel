@@ -73,7 +73,7 @@ class Model(object):
     pool = True
     indexes = None
 
-    def __init__(self, logging=None, retries=3, metric_retries=None):
+    def __init__(self, logging=None, retries=3, metric_retries=None, metric_save=None):
         self.connMan = ConnectionManager(pool=self.pool)
         if not self.indexes is None:
             self.indexes.create(self)
@@ -82,6 +82,7 @@ class Model(object):
         self.log = logging
         self.retries = retries
         self.metric_retries = metric_retries
+        self.metric_save = metric_save
 
     @defer.inlineCallbacks
     def execute(self, function):
@@ -143,11 +144,18 @@ class Model(object):
         
         return self.execute(_remove)
 
+    @defer.inlineCallbacks
     def save(self, doc):
         def _save(collection):
             return collection.save(doc, safe=True)
 
-        return self.execute(_save)
+        ret = {u'ok': 0.0}
+        ret = yield self.execute(_save)
+        if ret['ok'] == 0.0:
+            if not self.metric_save is None:
+                self.metric_save+=1
+            self.log.err("Error saving document: %r. Response: %r. Current save metric: %d"%(doc, ret, 0 if self.metric_save is None else int(self.metric_save)))
+        defer.returnValue(ret)
     
     def update(self, spec, upsert=False, multi=False, **data):
         def _update(collection):
