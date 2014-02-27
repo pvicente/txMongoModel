@@ -5,6 +5,7 @@ from txmongo import filter
 import types
 
 DELAYED_INDEX_TIME=5
+SLEEP_TIME_FUNC = None
 
 class Sort(object):
     @classmethod
@@ -72,38 +73,43 @@ class Model(object):
     collection = ""
     pool = True
     indexes = None
+    MAX_RETRY = 3
+    RETRY_DELAY = 1
+    METRIC_RETRY=0
+    METRIC_SAVE = 0
 
-    def __init__(self, logging=None, retries=3, metric_retries=None, metric_save=None):
+    def __init__(self, logging=None):
         self.connMan = ConnectionManager(pool=self.pool)
         if not self.indexes is None:
             self.indexes.create(self)
         if logging is None:
             logging = log
         self.log = logging
-        self.retries = retries
-        self.metric_retries = metric_retries
-        self.metric_save = metric_save
 
     @defer.inlineCallbacks
     def execute(self, function):
         collection = yield self.connMan.getCollection(self.db, self.collection)
         ret = None
 
-        retries = self.retries
+        retries = self.MAX_RETRY
         while retries>0:
             try:
                 ret = yield function(collection)
                 retries=0
             except Exception, e:
-                if not self.metric_retries is None:
-                    self.metric_retries+=1
+                global SLEEP_TIME_FUNC
+                self.METRIC_RETRY+=1
                 retries-=1
+                if not SLEEP_TIME_FUNC is None:
+                    yield SLEEP_TIME_FUNC(self.RETRY_DELAY)
+
                 if retries == 0:
-                    msg = "Max retries exceeded: %d. Error performing %r with exception %r. Accumulated errors: %d"%(self.retries, function, e, 0 if self.metric_retries is None else int(self.metric_retries))
+                    msg = "Max retries exceeded: %d. Error performing %r with exception %r. Accumulated errors: %d"%(self.MAX_RETRY, function, e, self.METRIC_RETRY)
                     self.log.err(msg)
                     if reactor.running:
+                        self.log.err("Stopping reactor due to many errors with MONGO")
                         reactor.stop()
-                    raise
+                    raise e
         defer.returnValue(ret)
 
     def insert(self, **data):
@@ -152,9 +158,8 @@ class Model(object):
         ret = {u'ok': 0.0}
         ret = yield self.execute(_save)
         if isinstance(ret, types.DictionaryType) and ret['ok'] == 0.0:
-            if not self.metric_save is None:
-                self.metric_save+=1
-            self.log.err("Error saving document: %r. Response: %r. Current save metric: %d"%(doc, ret, 0 if self.metric_save is None else int(self.metric_save)))
+            self.METRIC_SAVE+=1
+            self.log.err("Error saving document: %r. Response: %r. Current save metric: %d"%(doc, ret, self.METRIC_SAVE))
         defer.returnValue(ret)
     
     def update(self, spec, upsert=False, multi=False, **data):
